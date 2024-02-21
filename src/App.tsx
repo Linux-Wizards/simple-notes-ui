@@ -23,6 +23,7 @@ const App = () => {
   const [credentials, setCredentials] = useState(loadCredentials());
 
   const [notes, setNotes] = useState<Note[]>([]);
+  const [page, setPage] = useState<number>(0);
 
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -34,7 +35,7 @@ const App = () => {
   useEffect(() => {
     const fetchNotes = async () => {
       try {
-        const response = await fetch("http://localhost:8080/notes", { headers: { ...authHeaders } } );
+        const response = await fetch(`http://localhost:8080/notes?page=${page}&size=10&sort=id,desc`, { headers: { ...authHeaders } } );
 
         const notes: Note[] = await response.json();
 
@@ -45,7 +46,19 @@ const App = () => {
     };
 
     fetchNotes();
-  }, [credentials]);
+  }, [credentials, page]);
+
+  const nextPage = () => {
+    //if (notes.length > 0) {
+      setPage(page + 1);
+    //}
+  }
+
+  const prevPage = () => {
+    if (page > 0) {
+      setPage(page - 1);
+    }
+  }
 
   const handleAddNote = async (
     event: React.FormEvent
@@ -216,6 +229,10 @@ const App = () => {
         ) : (
           <button type="submit">Add Note</button>
         )}
+      <div className="page-buttons">
+        <button onClick={prevPage}>Previous page</button>
+        <button onClick={nextPage}>Next page</button>
+      </div>
       </form>
       <div className="notes-grid">
         {notes.map((note) => (

@@ -90,6 +90,15 @@ input {
   gap: 5px;
 }
 
+.page-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.page-buttons button {
+  flex: 1;
+}
+
 .edit-buttons button {
   flex: 1;
 }
