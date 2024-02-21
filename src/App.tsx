@@ -5,79 +5,87 @@ type Note = {
   id: number;
   title: string;
   content: string;
+  owner: string;
 }
 
+const loadCredentials = () => {
+  const storedCredentials = localStorage.getItem('credentials');
+  if (storedCredentials) {
+    return JSON.parse(storedCredentials);
+  }
+  const username = prompt('Enter your username: ');
+  const password = prompt('Enter your password: ');
+  localStorage.setItem('credentials', JSON.stringify({ username, password }));
+  return { username, password };
+};
+
 const App = () => {
-  const [notes, setNotes] = useState<Note[]>([
-    {
-      id: 1,
-      title: "test note 1",
-      content: "note 1 content"
-    },
-    {
-      id: 2,
-      title: "test note 2",
-      content: "note 2 content"
-    },
-    {
-      id: 3,
-      title: "test note 3",
-      content: "note 3 content"
-    },
-    {
-      id: 4,
-      title: "test note 4",
-      content: "note 4 content"
-    },
-    {
-      id: 5,
-      title: "test note 5",
-      content: "note 5 content"
-    },
-    {
-      id: 6,
-      title: "test note 6",
-      content: "note 6 content"
-    },
-    {
-      id: 7,
-      title: "test note 7",
-      content: "note 7 content"
-    }
-  ]);
+  const [credentials, setCredentials] = useState(loadCredentials());
+
+  const [notes, setNotes] = useState<Note[]>([]);
 
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
 
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
 
+  const authHeaders = { 'Authorization': 'Basic ' + btoa(credentials.username + ":" + credentials.password) };
+
   useEffect(() => {
     const fetchNotes = async () => {
       try {
-        const response = await fetch("http://localhost:8080/notes");
+        const response = await fetch("http://localhost:8080/notes", { headers: { ...authHeaders } } );
+
         const notes: Note[] = await response.json();
+
         setNotes(notes);
-      } catch (e) {
-        console.log(e);
+      } catch (error) {
+        console.log('Error fetching notes: ', error);
       }
     };
 
     fetchNotes();
-  }, []);
-  const handleAddNote = (
+  }, [credentials]);
+
+  const handleAddNote = async (
     event: React.FormEvent
   ) => {
     event.preventDefault();
 
-    const newNote: Note = {
-      id: notes.length + 1,
-      title: title,
-      content: content
-    }
+    try {
+      const response = await fetch(
+        "http://localhost:8080/notes",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...authHeaders
+          },
+          body: JSON.stringify({
+            title,
+            content
+          }),
+        }
+      );
+      const newNoteLocation = await response.headers.get('Location');
 
-    setNotes([newNote, ...notes]);
-    setTitle("");
-    setContent("");
+      if (newNoteLocation === null) {
+        throw new Error("Expected a 'Location' header to be included in POST response, but got null");
+      }
+
+      const newNote: Note = {
+        "id": parseInt(newNoteLocation.split('/').pop() || "", 10),
+        "title": title,
+        "content": content,
+        "owner": credentials.username
+      };
+
+      setNotes([newNote, ...notes]);
+      setTitle("");
+      setContent("");
+    } catch (error) {
+      console.log('Error creating a note: ', error);
+    }
   };
 
   const handleNoteClick = (note: Note) => {
@@ -86,25 +94,47 @@ const App = () => {
     setContent(note.content);
   }
 
-  const handleUpdateNote = (event: React.FormEvent) => {
+  const handleUpdateNote = async (
+    event: React.FormEvent
+    ) => {
     event.preventDefault();
 
     if (!selectedNote) {
       return;
     }
 
-    const updatedNote: Note = {
-      id: selectedNote.id,
-      title: title,
-      content: content
-    };
+    try {
+      const response = await fetch(
+        `http://localhost:8080/notes/${selectedNote.id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            ...authHeaders
+          },
+          body: JSON.stringify({
+            title,
+            content
+          }),
+        }
+      );
 
-    const updatedNotesList = notes.map ((note) => (note.id === selectedNote.id ? updatedNote : note));
+      const updatedNote: Note = {
+        id: selectedNote.id,
+        title: title,
+        content: content,
+        owner: credentials.username
+      };
 
-    setNotes(updatedNotesList);
-    setTitle("");
-    setContent("");
-    setSelectedNote(null);
+      const updatedNotesList = notes.map ((note) => (note.id === selectedNote.id ? updatedNote : note));
+
+      setNotes(updatedNotesList);
+      setTitle("");
+      setContent("");
+      setSelectedNote(null);
+    } catch (error) {
+      console.log('Error creating a note: ', error);
+    }
   }
 
   const handleCancel = () => {
@@ -113,12 +143,28 @@ const App = () => {
     setSelectedNote(null);
   };
 
-  const deleteNote = (event: React.MouseEvent, noteId: number) => {
+  const deleteNote = async (
+      event: React.MouseEvent,
+      noteId: number
+    ) => {
     event.stopPropagation();
 
-    const updatedNotes = notes.filter((note) => note.id !== noteId);
+    try {
+      await fetch(
+        `http://localhost:8080/notes/${noteId}`,
+        {
+          method: "DELETE",
+          headers: {
+            ...authHeaders
+          }
+        }
+      );
 
-    setNotes(updatedNotes);
+      const updatedNotes = notes.filter((note) => note.id !== noteId);
+      setNotes(updatedNotes);
+    } catch (error) {
+      console.log('Error deleting a note: ', error);
+    }
   };
 
   return (
