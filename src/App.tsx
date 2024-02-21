@@ -67,6 +67,17 @@ const App = () => {
           }),
         }
       );
+
+      if (!response.ok) {
+        if (response.status === 400) {
+          alert("Title or content is too long. Please shorten it.");
+        } else {
+          alert("Unknown error occurred when creating note!")
+        }
+
+        throw new Error("Expected HTTP response code 200 OK, but received " + response.status);
+      }
+
       const newNoteLocation = await response.headers.get('Location');
 
       if (newNoteLocation === null) {
@@ -118,6 +129,16 @@ const App = () => {
           }),
         }
       );
+
+      if (!(response.status === 204)) {
+        if (response.status === 400) {
+          alert("Title or content is too long. Please shorten it.");
+        } else {
+          alert("Unknown error occurred when creating note!")
+        }
+
+        throw new Error("Expected HTTP response code 204 No Content, but received " + response.status);
+      }
 
       const updatedNote: Note = {
         id: selectedNote.id,
