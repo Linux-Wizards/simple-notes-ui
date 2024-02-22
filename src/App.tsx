@@ -203,6 +203,7 @@ const App = () => {
 
   return (
     <div className="app-container">
+      <div className="note-form">
       <form
         className="note-form"
         onSubmit={(event) => (selectedNote ? handleUpdateNote(event) : handleAddNote(event))}
@@ -229,11 +230,12 @@ const App = () => {
         ) : (
           <button type="submit">Add Note</button>
         )}
-      <div className="page-buttons">
+      </form>
+      <div className="edit-buttons">
         <button onClick={prevPage}>Previous page</button>
         <button onClick={nextPage}>Next page</button>
+        </div>
       </div>
-      </form>
       <div className="notes-grid">
         {notes.map((note) => (
           <div key={note.id} className="note-item" onClick={() => handleNoteClick(note)}>
