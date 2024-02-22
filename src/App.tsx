@@ -231,7 +231,7 @@ const App = () => {
           <button type="submit">Add Note</button>
         )}
       </form>
-      <div className="edit-buttons">
+      <div className="page-buttons">
         <button onClick={prevPage}>Previous page</button>
         <button onClick={nextPage}>Next page</button>
         </div>
