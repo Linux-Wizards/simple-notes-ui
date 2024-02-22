@@ -49,9 +49,9 @@ const App = () => {
   }, [credentials, page]);
 
   const nextPage = () => {
-    //if (notes.length > 0) {
+    if (notes.length > 0) {
       setPage(page + 1);
-    //}
+    }
   }
 
   const prevPage = () => {
